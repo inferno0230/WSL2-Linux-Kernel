@@ -63,7 +63,8 @@ static inline u64 xfeatures_mask_supervisor(void)
 
 static inline u64 xfeatures_mask_independent(void)
 {
-	if (!cpu_feature_enabled(X86_FEATURE_ARCH_LBR))
+	if (!cpu_feature_enabled(X86_FEATURE_ARCH_LBR) ||
+	    (fpu_kernel_cfg.max_features & XFEATURE_MASK_LBR) == 0)
 		return fpu_kernel_cfg.independent_features & ~XFEATURE_MASK_LBR;
 
 	return fpu_kernel_cfg.independent_features;
