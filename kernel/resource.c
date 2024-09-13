@@ -1693,18 +1693,15 @@ static int strict_iomem_checks;
  *
  * Returns true if exclusive to the kernel, otherwise returns false.
  */
-bool iomem_is_exclusive(u64 addr)
+bool resource_is_exclusive(struct resource *root, u64 addr, resource_size_t size)
 {
 	const unsigned int exclusive_system_ram = IORESOURCE_SYSTEM_RAM |
 						  IORESOURCE_EXCLUSIVE;
 	bool skip_children = false, err = false;
-	int size = PAGE_SIZE;
 	struct resource *p;
 
-	addr = addr & PAGE_MASK;
-
 	read_lock(&resource_lock);
-	for_each_resource(&iomem_resource, p, skip_children) {
+	for_each_resource(root, p, skip_children) {
 		if (p->start >= addr + size)
 			break;
 		if (p->end < addr) {
@@ -1743,6 +1740,12 @@ bool iomem_is_exclusive(u64 addr)
 	return err;
 }
 
+bool iomem_is_exclusive(u64 addr)
+{
+	return resource_is_exclusive(&iomem_resource, addr & PAGE_MASK,
+				     PAGE_SIZE);
+}
+
 struct resource_entry *resource_list_create_entry(struct resource *res,
 						  size_t extra_size)
 {
@@ -1778,8 +1781,7 @@ static resource_size_t gfr_start(struct resource *base, resource_size_t size,
 	if (flags & GFR_DESCENDING) {
 		resource_size_t end;
 
-		end = min_t(resource_size_t, base->end,
-			    (1ULL << MAX_PHYSMEM_BITS) - 1);
+		end = min_t(resource_size_t, base->end, PHYSMEM_END);
 		return end - size + 1;
 	}
 
@@ -1796,8 +1798,7 @@ static bool gfr_continue(struct resource *base, resource_size_t addr,
 	 * @size did not wrap 0.
 	 */
 	return addr > addr - size &&
-	       addr <= min_t(resource_size_t, base->end,
-			     (1ULL << MAX_PHYSMEM_BITS) - 1);
+	       addr <= min_t(resource_size_t, base->end, PHYSMEM_END);
 }
 
 static resource_size_t gfr_next(resource_size_t addr, resource_size_t size,
