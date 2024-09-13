@@ -1,0 +1,104 @@
+#! /bin/bash
+#
+# Kernel compile script for WSL2 kernel
+# Copyright (C) 2023-2024 InFeRnO.
+
+# Setup environment
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[0;33m'
+blue='\033[0;34m'
+clear='\033[0m'
+KERNEL_PATH=$PWD
+ARCH=x86
+DEFCONFIG=custom_defconfig
+
+ArchLinux() {
+    # Check if yay is installed
+    if ! command -v yay &> /dev/null
+    then
+        echo -e "${red}yay is not installed, please install it first!${clear}"
+        exit
+    else
+        yay -S lineageos-devel aosp-devel zstd tar wget curl base-devel lib32-ncurses lib32-zlib lib32-readline cpio flex bison pahole-git dwarves --noconfirm
+    fi
+}
+
+Ubuntu() {
+    sudo apt install build-essential bc flex bison dwarves libssl-dev libelf-dev cpio -y
+}
+
+regenerate_defconfig() {
+    cd $KERNEL_PATH
+    make O=out ARCH=$ARCH $DEFCONFIG savedefconfig
+    cp out/.config arch/$ARCH/configs/$DEFCONFIG
+}
+
+build_kernel() {
+    cd $KERNEL_PATH
+    make O=out ARCH=$ARCH $DEFCONFIG savedefconfig
+    # Begin compilation
+    start=$(date +%s)
+    make O=out ARCH=$ARCH -j`nproc` ${BUILD_CC} 2>&1 | tee error.log
+    if [ -f $KERNEL_PATH/out/arch/$ARCH/boot/bzImage ]; then
+        echo -e "${green}Kernel Compilation successful: out/arch/$ARCH/boot/bzImage. ${clear}"
+    else
+        echo -e "${red}Compilation failed!${clear}"
+        echo -e "${red}Check error.log for more info!${clear}"
+        exit
+    fi
+}
+
+distro_check(){ 
+    if [ -f /etc/arch-release ]; then
+    echo -e "${green}Arch Linux detected!${clear}"
+    ArchLinux
+elif [ -f /etc/lsb-release ]; then
+    echo -e "${green}Debian based distro detected!${clear}"
+    Ubuntu
+else
+    echo -e "${red}Unsupported OS or ARCH!${clear}"
+    exit
+fi
+}
+
+start=$(date +%s)
+
+# Parse Args
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --regenerate) # To regenerate defconfig
+            REGENERATE_DEFCONFIG=true
+            shift
+            ;;
+        --clean) # To clean build kernel
+            CLEAN_BUILD=true
+            shift
+            ;;
+        --setup) # install nessesary packages for kbuild
+            SETUP=true
+            shift
+            ;;
+        *) # ¯_(ツ)_/¯
+            echo "$1: ¯_(ツ)_/¯"
+            exit 1
+            ;;
+    esac
+done
+
+if [ "$REGENERATE_DEFCONFIG" = true ]; then
+    regenerate_defconfig
+    echo -e "${green}Defconfig regenerated successfully!${clear}"
+    exit
+fi
+
+if [ "$CLEAN_BUILD" = true ]; then
+    rm -rf out/
+    echo -e "${green}Entire out folder removed."
+fi
+
+if [ "$SETUP" = true ];then
+    distro_check
+fi
+
+build_kernel
