@@ -12,6 +12,17 @@ clear='\033[0m'
 KERNEL_PATH=$PWD
 ARCH=x86
 DEFCONFIG=custom_defconfig
+LLVM_DIR=.clang
+LLVM_URL="https://cdn.kernel.org/pub/tools/llvm/files/llvm-18.1.8-x86_64.tar.gz"
+LLVM_VER="llvm-18.1.8-x86_64"
+export PATH=$PWD/.clang/llvm-18.1.8-x86_64/bin:$PATH
+BUILD_CC="LLVM=1"
+
+clone_clang() {
+    mkdir $LLVM_DIR
+    wget -O llvm.tar.gz $LLVM_URL
+    tar -xzf llvm.tar.gz -C $LLVM_DIR
+}
 
 ArchLinux() {
     # Check if yay is installed
@@ -20,28 +31,28 @@ ArchLinux() {
         echo -e "${red}yay is not installed, please install it first!${clear}"
         exit
     else
-        yay -S lineageos-devel aosp-devel zstd tar wget curl base-devel lib32-ncurses lib32-zlib lib32-readline cpio flex bison pahole-git dwarves --noconfirm
+        yay -S lineageos-devel aosp-devel zstd tar wget curl base-devel lib32-ncurses lib32-zlib lib32-readline cpio flex bison pahole-git dwarves wget --noconfirm
     fi
 }
 
 Ubuntu() {
-    sudo apt install build-essential bc flex bison dwarves libssl-dev libelf-dev cpio -y
+    sudo apt install build-essential bc flex bison dwarves libssl-dev libelf-dev cpio wget -y
 }
 
 regenerate_defconfig() {
     cd $KERNEL_PATH
-    make O=out ARCH=$ARCH $DEFCONFIG savedefconfig
+    make $BUILD_CC O=out ARCH=$ARCH $DEFCONFIG savedefconfig
     cp out/.config arch/$ARCH/configs/$DEFCONFIG
 }
 
 build_kernel() {
     cd $KERNEL_PATH
-    make O=out ARCH=$ARCH $DEFCONFIG savedefconfig
+    make $BUILD_CC O=out ARCH=$ARCH $DEFCONFIG savedefconfig
     # Begin compilation
     start=$(date +%s)
-    make O=out ARCH=$ARCH -j`nproc` ${BUILD_CC} 2>&1 | tee error.log
+    make $BUILD_CC O=out ARCH=$ARCH -j`nproc` ${BUILD_CC} 2>&1 | tee error.log
     if [ -f $KERNEL_PATH/out/arch/$ARCH/boot/bzImage ]; then
-        echo -e "${green}Kernel Compilation successful: out/arch/$ARCH/boot/bzImage. ${clear}"
+        echo -e "${green}Kernel Compilation successful: out/arch/$ARCH/boot/bzImage${clear}"
     else
         echo -e "${red}Compilation failed!${clear}"
         echo -e "${red}Check error.log for more info!${clear}"
@@ -94,11 +105,17 @@ fi
 
 if [ "$CLEAN_BUILD" = true ]; then
     rm -rf out/
-    echo -e "${green}Entire out folder removed."
+    echo -e "${green}Entire out folder removed.${clear}"
 fi
 
-if [ "$SETUP" = true ];then
+if [ "$SETUP" = true ]; then
     distro_check
+fi
+
+if [ -d "$LLVM_DIR" ]; then
+    echo -e "${green}LLVM CLANG already exists. Skipping download.${clear}"
+else
+    clone_clang
 fi
 
 build_kernel
