@@ -13,8 +13,8 @@ KERNEL_PATH=$PWD
 ARCH=x86
 DEFCONFIG=custom_defconfig
 LLVM_DIR=.clang
-LLVM_URL="https://cdn.kernel.org/pub/tools/llvm/files/llvm-19.1.0-x86_64.tar.gz"
-LLVM_VER="llvm-19.1.0-x86_64"
+LLVM_URL="https://cdn.kernel.org/pub/tools/llvm/files/llvm-19.1.1-x86_64.tar.gz"
+LLVM_VER="llvm-19.1.1-x86_64"
 export PATH=$PWD/.clang/$LLVM_VER/bin:$PATH
 BUILD_CC="LLVM=1"
 
@@ -52,7 +52,8 @@ build_kernel() {
     start=$(date +%s)
     make $BUILD_CC O=out ARCH=$ARCH -j`nproc` ${BUILD_CC} 2>&1 | tee error.log
     if [ -f $KERNEL_PATH/out/arch/$ARCH/boot/bzImage ]; then
-        echo -e "${green}Kernel Compilation successful: out/arch/$ARCH/boot/bzImage${clear}"
+        make_zip
+        echo -e "${green}Kernel Compilation successful.${clear}"
     else
         echo -e "${red}Compilation failed!${clear}"
         echo -e "${red}Check error.log for more info!${clear}"
@@ -71,6 +72,14 @@ else
     echo -e "${red}Unsupported OS or ARCH!${clear}"
     exit
 fi
+}
+
+make_zip(){
+    zip_name="WSL2-Linux-v6.1.$(grep "^SUBLEVEL =" Makefile | awk '{print $3}')-$(date +"%Y%m%d-%H%M").zip"
+    zip out/$zip_name $KERNEL_PATH/out/arch/$ARCH/boot/bzImage
+    echo -e "${green}out: ${KERNEL_PATH}/out/${zip_name}${clear}"
+    echo -e "${clear}"
+    echo -e "${green}Completed in $(($(date +%s) - start)) seconds.${clear}"
 }
 
 start=$(date +%s)
