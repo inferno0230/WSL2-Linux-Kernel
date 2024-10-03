@@ -15,3 +15,5 @@ wireguard-y += ratelimiter.o
 wireguard-y += cookie.o
 wireguard-y += netlink.o
 obj-$(CONFIG_WIREGUARD) := wireguard.o
+
+KBUILD_CFLAGS += -Wframe-larger-than=1128
