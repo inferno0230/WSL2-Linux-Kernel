@@ -13,8 +13,8 @@ KERNEL_PATH=$PWD
 ARCH=x86
 DEFCONFIG=custom_defconfig
 LLVM_DIR=.clang
-LLVM_URL="https://cdn.kernel.org/pub/tools/llvm/files/llvm-19.1.1-x86_64.tar.gz"
-LLVM_VER="llvm-19.1.1-x86_64"
+LLVM_URL="https://cdn.kernel.org/pub/tools/llvm/files/llvm-19.1.2-x86_64.tar.gz"
+LLVM_VER="llvm-19.1.2-x86_64"
 export PATH=$PWD/.clang/$LLVM_VER/bin:$PATH
 BUILD_CC="LLVM=1"
 
