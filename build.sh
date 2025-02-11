@@ -47,7 +47,7 @@ regenerate_defconfig() {
 
 build_kernel() {
     cd $KERNEL_PATH
-    make $BUILD_CC O=out ARCH=$ARCH $DEFCONFIG savedefconfig
+    make CC='ccache clang' CXX='ccache clang++' $BUILD_CC O=out ARCH=$ARCH $DEFCONFIG savedefconfig
     # Begin compilation
     start=$(date +%s)
     make $BUILD_CC O=out ARCH=$ARCH -j`nproc` ${BUILD_CC} 2>&1 | tee error.log
