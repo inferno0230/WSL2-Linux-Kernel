@@ -75,8 +75,9 @@ fi
 }
 
 make_zip(){
-    zip_name="WSL2-Linux-v6.1.$(grep "^SUBLEVEL =" Makefile | awk '{print $3}')-$(date +"%Y%m%d-%H%M").zip"
-    zip out/$zip_name $KERNEL_PATH/out/arch/$ARCH/boot/bzImage
+    zip_name="WSL2-Linux-v6.1.$(grep "^SUBLEVEL =" Makefile | awk '{print $3}')-$(date +"%Y%m%d").zip"
+    cd $KERNEL_PATH
+    zip out/$zip_name out/arch/$ARCH/boot/bzImage
     echo -e "${green}out: ${KERNEL_PATH}/out/${zip_name}${clear}"
     echo -e "${clear}"
     echo -e "${green}Completed in $(($(date +%s) - start)) seconds.${clear}"
